@@ -1,52 +1,66 @@
 from time import sleep
-from picamera import PiCamera
+from picamera2 import Picamera2, Preview
 from gpiozero import Servo
 from gpiozero import PWMLED
 from gpiozero import LED
 from gpiozero import Button
-import RPi.GPIO as GPIO
+
+try:
+    import RPi.GPIO as GPIO
+except RuntimeError:
+    print(
+        "Error importing RPi.GPIO!  This is probably because you need superuser privileges.  You can achieve this by using 'sudo' to run your script"
+    )
 from threading import Thread
 from threading import Event
 import os
 from fractions import Fraction
 
-img_num = 0
+img_num = 1
 
 
 def initHardware():
-    camera = PiCamera(resolution=(1280, 720), framerate=Fraction(1, 3))
+    camera = Picamera2()
+    config = camera.create_still_configuration()
+    camera.configure(config)
     pin_servo = Servo(27, initial_value=1)
     push_servo = Servo(12, initial_value=-0.1)  # requires offset
-    led = LED(18)
-    GPIO.setup(17, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # IR pin
+    led1 = LED(18)  # bottom
+    led2 = LED(19)  # top
     button = Button(pin=22, pull_up=True)
-    return (camera, pin_servo, push_servo, led, button)
+    ir_sensor = Button(pin=17, pull_up=True)
+    return (camera, pin_servo, push_servo, led1, led2, button, ir_sensor)
 
 
 def takePhoto(camera):
     global img_num
     filename = "foo" + str(img_num) + ".jpg"
-    camera.capture(filename)
+    print(f"Capturing image {filename}")
+    sleep(3)
+    camera.start_and_capture_file(show_preview=False)
+    # camera.stop()
     img_num += 1
     return filename
 
 
 def pushCard(servo, enable):
-    value = 0.1 if enable else -0.1
-    print("Setting Servo")
+    value = 0.2 if enable else -0.1
+    print(f"Setting Servo {value}")
     servo.value = value
 
 
-def dropCard(servo):
+def lowerCardPin(servo):
     print("dropCard")
     servo.value = -1
-    sleep(2)
+
+
+def raiseCardPin(servo):
+    print("Raise Card Pin")
     servo.value = 1
-    sleep(2)
 
 
-def detectCard():
-    if not GPIO.input(17):
+def detectCard(ir_sensor):
+    if ir_sensor.value == 1:
         print("Card Detected")
         return True
     else:
@@ -54,8 +68,14 @@ def detectCard():
         return False
 
 
-def enableLED(led):
-    led.on()
+def enableLED(led1, led2):
+    led1.on()
+    led2.on()
+
+
+def disableLED(led1, led2):
+    led1.off()
+    led2.off()
 
 
 def handleButton(button):
@@ -64,8 +84,8 @@ def handleButton(button):
     print("Button pressed")
 
 
-def processPhoto():
-    print("processPhoto")
+def processPhoto(filename):
+    print(f"processPhoto {filename}")
 
 
 def updateDatabase():
@@ -79,25 +99,28 @@ def savePhoto():
 def processCards(event):
     while True:
         pushCard(push_servos, True)
-        while not detectCard():
+        while not detectCard(ir_sensor):
             if event.is_set():
                 return
             sleep(0.25)
         pushCard(push_servos, False)
-        led.on()
+        enableLED(led1, led2)
         sleep(1)
         filename = takePhoto(camera)
-        while detectCard():
+        disableLED(led1, led2)
+        processPhoto(filename)
+        lowerCardPin(pin_servo)
+        while detectCard(ir_sensor):
             if event.is_set():
                 return
-            dropCard(pin_servo)
             sleep(1)
-        led.off()
+        raiseCardPin(pin_servo)
 
 
 if __name__ == "__main__":
-    print("Hello world")
-    camera, pin_servo, push_servos, led, button = initHardware()
+    camera, pin_servo, push_servos, led1, led2, button, ir_sensor = initHardware()
+    # filename = takePhoto(camera)
+    # print(f"took a picture named {filename}")
     event = Event()
     thread = Thread(target=processCards, args=(event,))
     thread.start()
@@ -107,4 +130,3 @@ if __name__ == "__main__":
     thread.join()
     print("JOINED THREAD")
     handleButton(button)
-    os.system("sudo shutdown now")
