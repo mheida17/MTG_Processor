@@ -17,7 +17,7 @@ def initHardware():
     camera = Picamera2()
     config = camera.create_still_configuration()
     camera.configure(config)
-    pin_servo = Servo(27, initial_value=1)
+    pin_servo = Servo(13, initial_value=1)
     push_servo = Servo(12, initial_value=None)
     led1 = PWMLED(18)  # bottom
     led2 = LED(19)  # top
