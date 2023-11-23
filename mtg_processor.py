@@ -62,12 +62,10 @@ def pushCard(ir_sensor, servo, enable):
 
 
 def lowerCardPin(servo):
-    print("dropCard")
     servo.value = -1
 
 
 def raiseCardPin(servo):
-    print("Raise Card Pin")
     servo.value = 1
 
 
@@ -96,19 +94,8 @@ def handleButton(button):
     print("Button pressed")
 
 
-def processPhoto(filename):
-    print(f"processPhoto {filename}")
-
-
-def updateDatabase():
-    print("updateDatabase")
-
-
-def savePhoto():
-    print("savePhoto")
-
-
 def dropCard(pin_servo, ir_sensor, event):
+    print("Dropping Card")
     lowerCardPin(pin_servo)
     while detectCard(ir_sensor):
         if event.is_set():
@@ -117,8 +104,13 @@ def dropCard(pin_servo, ir_sensor, event):
     raiseCardPin(pin_servo)
 
 
+def processPhoto(filename):
+    pass
+
+
 def processCards(event):
-    if detectCard(ir_sensor):  # Clear any old cards if program stopped unexpectedly
+    # Clear any old cards if program stopped unexpectedly
+    if detectCard(ir_sensor):
         dropCard(pin_servo, ir_sensor, event)
     while True:
         pushCard(ir_sensor, push_servos, True)
