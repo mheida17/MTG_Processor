@@ -7,8 +7,8 @@ from gpiozero import Button
 from libcamera import controls  # Needed for focus controls
 from threading import Thread
 from threading import Event
-import os
-from fractions import Fraction
+import cv2
+import pytesseract
 
 img_num = 1
 
@@ -28,7 +28,7 @@ def initHardware():
 
 def takePhoto(camera):
     global img_num
-    filename = "foo" + str(img_num) + ".jpg"
+    filename = "images/foo" + str(img_num) + ".jpg"
     print(f"Capturing image {filename}")
     camera.start()
     camera.stop_preview()
@@ -105,7 +105,22 @@ def dropCard(pin_servo, ir_sensor, event):
 
 
 def processPhoto(filename):
-    pass
+    image = cv2.imread(filename, 0)
+    thresh = (
+        255 - cv2.threshold(image, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1]
+    )
+
+    x, y, w, h = 3750, 100, 250, 1250
+    ROI = thresh[y : y + h, x : x + w]
+    rotated = cv2.rotate(ROI, cv2.ROTATE_90_COUNTERCLOCKWISE)
+    card_name = pytesseract.image_to_string(rotated, lang="eng", config="--psm 7")
+    print(f"Card Name {card_name}")
+    return card_name
+
+
+def pushCardDB(card_name):
+    with open("cardList.txt", "a") as cardFile:
+        cardFile.writelines(card_name)
 
 
 def processCards(event):
@@ -123,7 +138,8 @@ def processCards(event):
         sleep(1)
         filename = takePhoto(camera)
         disableLED(led1, led2)
-        processPhoto(filename)
+        card_name = processPhoto(filename)
+        pushCardDB(card_name)
         dropCard(pin_servo, ir_sensor, event)
 
 

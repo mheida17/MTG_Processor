@@ -1,3 +1,4 @@
 gpiozero==2.0
 picamera2==0.3.14
-RPi.GPIO==0.7.1
+pytesseract==0.3.10
+opencv-python==4.8.1.78
