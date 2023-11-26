@@ -13,6 +13,7 @@ from hardware import (
     dropCard,
 )
 from camera import takePhoto
+from sf_price_fetcher import fetcher
 
 
 def cleanUpCardName(card_name):
@@ -22,13 +23,17 @@ def cleanUpCardName(card_name):
             first_slice = card_name[index:]
             break
         index = index + 1
-
-    index = first_slice.length() - 1
+    if first_slice is None:
+        return "Empty"
+    index = len(first_slice) - 1
 
     for c in first_slice[::-1]:
         if c.isalpha():
             final_slice = first_slice[:index]
+            break
         index = index - 1
+    if final_slice is None:
+        return "Empty"
     return final_slice
 
 
@@ -45,6 +50,8 @@ def processPhoto(filename):
     card_name_detected = pytesseract.image_to_string(
         rotated, lang="eng", config="--psm 7"
     )
+    if card_name_detected is None:
+        return "Empty"
     card_name_modified = cleanUpCardName(card_name_detected)
     print(f"Card Name {card_name_detected}")
     print(f"Modified Card Name {card_name_modified}")
@@ -52,8 +59,11 @@ def processPhoto(filename):
 
 
 def pushCardDB(card_name):
-    with open("cardList.txt", "a") as cardFile:
-        cardFile.writelines(card_name)
+    price = fetcher.get(card_name)
+    if price is not None:
+        print(f"Found price: {price}")
+        with open("cardList.txt", "a") as cardFile:
+            cardFile.writelines(card_name)
 
 
 def processCards(event):
