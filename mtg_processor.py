@@ -1,6 +1,4 @@
 from time import sleep
-from threading import Thread
-from threading import Event
 import cv2
 import pytesseract
 from hardware import (
@@ -8,7 +6,6 @@ from hardware import (
     enableLED,
     disableLED,
     detectCard,
-    handleButton,
     pushCard,
     dropCard,
     powerDown,
@@ -17,19 +14,12 @@ from camera import takePhoto
 from sf_price_fetcher import fetcher
 import os
 import sys
-import signal
 import scrython
 
 img_num = 0
 
 
-def signal_handler(signal_number, frame):
-    powerDown(pin_servo, push_servos)
-    sys.exit()
-
-
 def cleanUpCardName(card_name):
-    print(f"Cleaning up card name: {card_name}")
     index = 0
     for c in card_name:
         if c.isalpha():
@@ -38,7 +28,6 @@ def cleanUpCardName(card_name):
         index = index + 1
     try:
         index = len(first_slice)
-        # print(f"First Pass: {first_slice}")
     except:
         return None
 
@@ -48,7 +37,6 @@ def cleanUpCardName(card_name):
             break
         index = index - 1
     try:
-        # print(f"Last Pass: {final_slice}")
         return final_slice
     except:
         return None
@@ -59,9 +47,6 @@ def processPhoto(filename):
     current_working_directory = os.getcwd()
     image = cv2.imread(filename, cv2.IMREAD_GRAYSCALE)
     image = cv2.medianBlur(image, 5)
-    # thresh = (
-    #     255 - cv2.threshold(image, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1]
-    # )
     thresh = cv2.adaptiveThreshold(
         image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 3
     )
@@ -114,8 +99,6 @@ def processCards(event):
     while True:
         pushCard(ir_sensor, push_servos, True)
         while not detectCard(ir_sensor):
-            # if event.is_set():
-            #    return
             sleep(0.25)
         pushCard(ir_sensor, push_servos, False)
         enableLED(led1, led2)
@@ -129,14 +112,4 @@ def processCards(event):
 
 if __name__ == "__main__":
     camera, pin_servo, push_servos, led1, led2, button, ir_sensor = initHardware()
-    signal.signal(signal.SIGINT, signal_handler)
     processCards(None)
-    # event = Event()
-    # thread = Thread(target=processCards, args=(event,))
-    # thread.start()
-    # handleButton(button)
-    # event.set()
-    # print("Trying to join thread")
-    # thread.join()
-    # print("JOINED THREAD")
-    # handleButton(button)

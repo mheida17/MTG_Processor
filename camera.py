@@ -1,4 +1,3 @@
-from picamera2 import Picamera2
 from libcamera import controls  # Needed for focus controls
 from time import sleep
 import os

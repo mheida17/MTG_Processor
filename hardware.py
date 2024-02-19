@@ -1,7 +1,5 @@
 from picamera2 import Picamera2
-from gpiozero import Servo
 from gpiozero import PWMLED
-from gpiozero import LED
 from gpiozero import Button
 from gpiozero import OutputDevice
 from time import sleep
@@ -41,35 +39,22 @@ def disableLED(led1, led2):
 
 def detectCard(ir_sensor):
     if ir_sensor.value == 1:
-        # print(f"Card Detected {ir_sensor.value}")
         return True
     else:
-        # print(f"Card Not Detected {ir_sensor.value}")
         return False
 
 
 def pushCard(ir_sensor, servo, enable):
     while not detectCard(ir_sensor) and enable:
-        # if event.is_set():
-        #    return
         servo.on()
     servo.off()
 
 
 def dropCard(pin_servo, ir_sensor):
-    # print("Dropping Card")
     lowerCardPin(pin_servo)
     while detectCard(ir_sensor):
-        # if event.is_set():
-        #    return
         sleep(1)
     raiseCardPin(pin_servo)
-
-
-def handleButton(button):
-    print("handleButton enter")
-    button.wait_for_press()
-    print("Button pressed")
 
 
 def powerDown(pin_servo, card_servo):
