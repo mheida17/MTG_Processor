@@ -3,3 +3,4 @@ picamera2==0.3.14
 pytesseract==0.3.10
 opencv-python==4.8.1.78
 sf-price-fetcher==0.1.0
+scrython==1.11.0

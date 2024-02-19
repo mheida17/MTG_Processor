@@ -1,13 +1,16 @@
-from picamera2 import Picamera2, Preview
+from picamera2 import Picamera2
 from libcamera import controls  # Needed for focus controls
 from time import sleep
+import os
 
-img_num = 1
+img_num = 0
+current_working_directory = os.getcwd()
 
 
 def takePhoto(camera):
     global img_num
-    filename = "images/foo" + str(img_num) + ".jpg"
+    global current_working_directory
+    filename = current_working_directory + "/" + "images/card_" + str(img_num) + ".jpg"
     print(f"Capturing image {filename}")
     camera.start()
     camera.stop_preview()
